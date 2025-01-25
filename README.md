@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI-Powered Sentiment Analysis Dashboard
+
+A sophisticated sentiment analysis and customer feedback categorization system built with Next.js, TypeScript, and OpenAI. This project demonstrates advanced AI/ML capabilities in a real-world business context.
+
+## Features
+
+- 🤖 Real-time sentiment analysis using OpenAI's GPT models
+- 📊 Interactive data visualizations with Recharts
+- 🎯 Automatic feedback categorization
+- 📈 Historical trend analysis
+- 🎨 Modern UI with Tailwind CSS
+- 🔍 Key phrase extraction
+- 📱 Responsive design
+
+## Tech Stack
+
+- Next.js 14
+- TypeScript
+- OpenAI API
+- Tailwind CSS
+- Recharts for data visualization
+- Shadcn/ui for UI components
 
 ## Getting Started
 
-First, run the development server:
-
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/yourusername/sentiment-analyzer.git
+cd sentiment-analyzer
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up environment variables:
+- Copy `.env.example` to `.env`
+- Add your OpenAI API key to `.env`:
+```
+OPENAI_API_KEY=your_api_key_here
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Run the development server:
+```bash
+npm run dev
+```
 
-## Learn More
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-To learn more about Next.js, take a look at the following resources:
+## Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+sentiment-analyzer/
+├── app/                    # Next.js app directory
+│   ├── api/               # API routes
+│   └── components/        # React components
+├── components/            # Shared UI components
+│   └── ui/               # Shadcn/ui components
+├── lib/                   # Utility functions
+├── public/               # Static assets
+└── types/                # TypeScript type definitions
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Future Enhancements
 
-## Deploy on Vercel
+- [ ] Add database integration for persistent storage
+- [ ] Implement user authentication
+- [ ] Add more advanced analytics features
+- [ ] Support for multiple languages
+- [ ] Export functionality for reports
+- [ ] Real-time collaboration features
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Contributing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
