@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
     // Get IP address for rate limiting
     const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') ?? 'unknown';
+    const ip = headersList.get('x-forwarded-for') || 'unknown';
     
     // Basic rate limiting
     const now = Date.now();
@@ -46,7 +46,19 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "system",
-          content: "You are a sentiment analysis expert. Analyze the following text and provide: \n1. Overall sentiment (positive/negative/neutral)\n2. Confidence score (0-1)\n3. Category (Product Quality/Customer Service/Pricing/Usability)\n4. Key phrases (exactly 3 phrases)\n\nRespond in JSON format with the following structure:\n{\n  \"overallSentiment\": string,\n  \"confidence\": number,\n  \"category\": string,\n  \"keyPhrases\": string[]\n}"
+          content: `You are a sentiment analysis expert. Analyze the following text and provide:
+1. Overall sentiment (must be exactly one of: "Positive", "Negative", "Neutral")
+2. Confidence score (0-1)
+3. Category (must be exactly one of: "Product Quality", "Customer Service", "Pricing", "Usability")
+4. Key phrases (exactly 3 key phrases)
+
+Respond in JSON format with the following structure:
+{
+  "overallSentiment": "Positive" | "Negative" | "Neutral",
+  "confidence": number,
+  "category": "Product Quality" | "Customer Service" | "Pricing" | "Usability",
+  "keyPhrases": string[]
+}`
         },
         {
           role: "user",
@@ -55,6 +67,7 @@ export async function POST(req: Request) {
       ],
       model: "gpt-3.5-turbo",
       response_format: { type: "json_object" },
+      temperature: 0.7,
     });
 
     const content = completion.choices[0].message.content;
@@ -65,10 +78,23 @@ export async function POST(req: Request) {
     const result = JSON.parse(content);
     
     // Validate the response structure
-    if (!result.keyPhrases || !Array.isArray(result.keyPhrases)) {
+    if (!['Positive', 'Negative', 'Neutral'].includes(result.overallSentiment)) {
+      throw new Error('Invalid sentiment value');
+    }
+
+    if (!['Product Quality', 'Customer Service', 'Pricing', 'Usability'].includes(result.category)) {
+      throw new Error('Invalid category value');
+    }
+
+    if (typeof result.confidence !== 'number' || result.confidence < 0 || result.confidence > 1) {
+      throw new Error('Invalid confidence value');
+    }
+
+    if (!Array.isArray(result.keyPhrases) || result.keyPhrases.length === 0) {
       result.keyPhrases = [];
     }
 
+    console.log('API Response:', result);
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error analyzing sentiment:', error);
