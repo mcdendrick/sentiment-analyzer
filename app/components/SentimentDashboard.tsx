@@ -145,19 +145,21 @@ const SentimentDashboard: React.FC = () => {
                       <span className="font-medium">Category:</span>
                       <span>{results.category}</span>
                     </div>
-                    <div>
-                      <span className="font-medium">Key Phrases:</span>
-                      <div className="mt-1">
-                        {results.keyPhrases.map((phrase, index) => (
-                          <span
-                            key={index}
-                            className="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2"
-                          >
-                            {phrase}
-                          </span>
-                        ))}
+                    {Array.isArray(results.keyPhrases) && results.keyPhrases.length > 0 && (
+                      <div>
+                        <span className="font-medium">Key Phrases:</span>
+                        <div className="mt-1">
+                          {results.keyPhrases.map((phrase, index) => (
+                            <span
+                              key={index}
+                              className="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2"
+                            >
+                              {phrase}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

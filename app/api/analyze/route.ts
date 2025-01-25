@@ -46,7 +46,7 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "system",
-          content: "You are a sentiment analysis expert. Analyze the following text and provide: \n1. Overall sentiment (positive/negative/neutral)\n2. Confidence score (0-1)\n3. Category (Product Quality/Customer Service/Pricing/Usability)\n4. Key phrases (up to 3)\n\nRespond in JSON format only."
+          content: "You are a sentiment analysis expert. Analyze the following text and provide: \n1. Overall sentiment (positive/negative/neutral)\n2. Confidence score (0-1)\n3. Category (Product Quality/Customer Service/Pricing/Usability)\n4. Key phrases (exactly 3 phrases)\n\nRespond in JSON format with the following structure:\n{\n  \"overallSentiment\": string,\n  \"confidence\": number,\n  \"category\": string,\n  \"keyPhrases\": string[]\n}"
         },
         {
           role: "user",
@@ -63,6 +63,12 @@ export async function POST(req: Request) {
     }
 
     const result = JSON.parse(content);
+    
+    // Validate the response structure
+    if (!result.keyPhrases || !Array.isArray(result.keyPhrases)) {
+      result.keyPhrases = [];
+    }
+
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error analyzing sentiment:', error);
