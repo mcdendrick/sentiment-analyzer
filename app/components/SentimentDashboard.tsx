@@ -32,17 +32,90 @@ const SentimentDashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[]>([]);
+  const [categoryData, setCategoryData] = useState<CategoryDataPoint[]>([
+    { name: 'Product Quality', positive: 75, negative: 25 },
+    { name: 'Customer Service', positive: 65, negative: 35 },
+    { name: 'Pricing', positive: 45, negative: 55 },
+    { name: 'Usability', positive: 85, negative: 15 },
+  ]);
 
   useEffect(() => {
-    const mockHistoricalData: HistoricalDataPoint[] = Array.from({ length: 7 }, (_, i) => ({
-      date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toLocaleDateString(),
-      positive: Math.floor(Math.random() * 30) + 50,
-      negative: Math.floor(Math.random() * 20) + 10,
-      neutral: Math.floor(Math.random() * 20) + 10,
-    })).reverse();
+    // Generate realistic sample data for the past 7 days
+    const initialHistoricalData: HistoricalDataPoint[] = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toLocaleDateString();
+      
+      // Generate different patterns for different days
+      let positive = 0, negative = 0, neutral = 0;
+      
+      if (i === 0) {
+        // Today starts empty
+        positive = 0;
+        negative = 0;
+        neutral = 0;
+      } else if (i === 1) {
+        // Yesterday had mostly positive feedback
+        positive = 85;
+        negative = 10;
+        neutral = 5;
+      } else if (i === 2) {
+        // Day before was mixed
+        positive = 45;
+        negative = 40;
+        neutral = 15;
+      } else if (i === 3) {
+        // Some negative feedback
+        positive = 30;
+        negative = 60;
+        neutral = 10;
+      } else if (i === 4) {
+        // Mostly neutral day
+        positive = 20;
+        negative = 20;
+        neutral = 60;
+      } else if (i === 5) {
+        // Good day
+        positive = 70;
+        negative = 20;
+        neutral = 10;
+      } else {
+        // Week started okay
+        positive = 50;
+        negative = 30;
+        neutral = 20;
+      }
+
+      return {
+        date,
+        positive,
+        negative,
+        neutral,
+      };
+    }).reverse();
     
-    setHistoricalData(mockHistoricalData);
+    setHistoricalData(initialHistoricalData);
   }, []);
+
+  // Add debug logging for state changes
+  useEffect(() => {
+    console.log('Historical Data:', historicalData);
+  }, [historicalData]);
+
+  useEffect(() => {
+    console.log('Category Data:', categoryData);
+  }, [categoryData]);
+
+  const getSentimentColor = (sentiment: 'Positive' | 'Negative' | 'Neutral'): string => {
+    switch (sentiment) {
+      case 'Positive':
+        return 'text-green-500';
+      case 'Negative':
+        return 'text-red-500';
+      case 'Neutral':
+        return 'text-yellow-500';
+      default:
+        return '';
+    }
+  };
 
   const analyzeSentiment = async (text: string): Promise<void> => {
     setIsLoading(true);
@@ -62,33 +135,94 @@ const SentimentDashboard: React.FC = () => {
       }
 
       const data: AnalysisResult = await response.json();
+      console.log('API Response:', data);
       setResults(data);
       
+      // Update historical data with force refresh
+      const today = new Date().toLocaleDateString();
+      const confidenceValue = Math.round(data.confidence * 100);
+      
       setHistoricalData(prev => {
-        const newData = [...prev];
-        if (newData.length >= 7) newData.shift();
-        const dataPoint: HistoricalDataPoint = {
-          date: new Date().toLocaleDateString(),
-          positive: data.overallSentiment === 'Positive' ? Math.round(data.confidence * 100) : 0,
-          negative: data.overallSentiment === 'Negative' ? Math.round(data.confidence * 100) : 0,
-          neutral: data.overallSentiment === 'Neutral' ? Math.round(data.confidence * 100) : 0,
-        };
-        newData.push(dataPoint);
+        console.log('Previous Historical Data:', prev);
+        const existingIndex = prev.findIndex(item => item.date === today);
+        let newData;
+        
+        if (existingIndex === -1) {
+          newData = [...prev.slice(1), {
+            date: today,
+            positive: data.overallSentiment === 'Positive' ? confidenceValue : 0,
+            negative: data.overallSentiment === 'Negative' ? confidenceValue : 0,
+            neutral: data.overallSentiment === 'Neutral' ? confidenceValue : 0,
+          }];
+        } else {
+          newData = prev.map((item, index) => {
+            if (index === existingIndex) {
+              return {
+                ...item,
+                positive: data.overallSentiment === 'Positive' ? item.positive + confidenceValue : item.positive,
+                negative: data.overallSentiment === 'Negative' ? item.negative + confidenceValue : item.negative,
+                neutral: data.overallSentiment === 'Neutral' ? item.neutral + confidenceValue : item.neutral,
+              };
+            }
+            return item;
+          });
+        }
+        console.log('New Historical Data:', newData);
         return newData;
       });
+
+      // Update category data with force refresh
+      setCategoryData(prev => {
+        console.log('Previous Category Data:', prev);
+        const newData = prev.map(cat => {
+          if (cat.name === data.category) {
+            // Calculate new total and adjust percentages
+            const currentTotal = cat.positive + cat.negative;
+            const newConfidence = confidenceValue;
+            
+            let newPositive = cat.positive;
+            let newNegative = cat.negative;
+            
+            if (data.overallSentiment === 'Positive') {
+              // Add to positive, adjust both to maintain 100% total
+              const adjustedPositive = ((currentTotal * cat.positive) + (100 * newConfidence)) / (currentTotal + 100);
+              const adjustedNegative = 100 - adjustedPositive;
+              newPositive = Math.round(adjustedPositive);
+              newNegative = Math.round(adjustedNegative);
+            } else if (data.overallSentiment === 'Negative') {
+              // Add to negative, adjust both to maintain 100% total
+              const adjustedNegative = ((currentTotal * cat.negative) + (100 * newConfidence)) / (currentTotal + 100);
+              const adjustedPositive = 100 - adjustedNegative;
+              newPositive = Math.round(adjustedPositive);
+              newNegative = Math.round(adjustedNegative);
+            }
+            
+            const newCat = {
+              ...cat,
+              positive: newPositive,
+              negative: newNegative,
+            };
+            console.log('Updated Category:', cat.name, newCat);
+            return newCat;
+          }
+          return cat;
+        });
+        console.log('New Category Data:', newData);
+        return newData;
+      });
+
+      // Force a re-render by creating new array references
+      setHistoricalData(current => [...current]);
+      setCategoryData(current => [...current]);
+
+      setFeedback('');
     } catch (err) {
+      console.error('Error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsLoading(false);
     }
   };
-
-  const categoryData: CategoryDataPoint[] = [
-    { name: 'Product Quality', positive: 65, negative: 35 },
-    { name: 'Customer Service', positive: 75, negative: 25 },
-    { name: 'Pricing', positive: 45, negative: 55 },
-    { name: 'Usability', positive: 80, negative: 20 },
-  ];
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
@@ -129,11 +263,7 @@ const SentimentDashboard: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="font-medium">Sentiment:</span>
-                      <span className={`font-bold ${
-                        results.overallSentiment === 'Positive' ? 'text-green-500' :
-                        results.overallSentiment === 'Negative' ? 'text-red-500' :
-                        'text-yellow-500'
-                      }`}>
+                      <span className={`font-bold ${getSentimentColor(results.overallSentiment)}`}>
                         {results.overallSentiment}
                       </span>
                     </div>
@@ -145,7 +275,7 @@ const SentimentDashboard: React.FC = () => {
                       <span className="font-medium">Category:</span>
                       <span>{results.category}</span>
                     </div>
-                    {Array.isArray(results.keyPhrases) && results.keyPhrases.length > 0 && (
+                    {results.keyPhrases && results.keyPhrases.length > 0 && (
                       <div>
                         <span className="font-medium">Key Phrases:</span>
                         <div className="mt-1">
@@ -177,12 +307,12 @@ const SentimentDashboard: React.FC = () => {
                     <LineChart data={historicalData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" />
-                      <YAxis />
+                      <YAxis domain={[0, 100]} />
                       <Tooltip />
                       <Legend />
-                      <Line type="monotone" dataKey="positive" stroke="#4CAF50" />
-                      <Line type="monotone" dataKey="negative" stroke="#f44336" />
-                      <Line type="monotone" dataKey="neutral" stroke="#FFA726" />
+                      <Line type="monotone" dataKey="positive" stroke="#4CAF50" name="Positive" />
+                      <Line type="monotone" dataKey="negative" stroke="#f44336" name="Negative" />
+                      <Line type="monotone" dataKey="neutral" stroke="#FFA726" name="Neutral" />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -198,12 +328,12 @@ const SentimentDashboard: React.FC = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={categoryData}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
+                      <XAxis dataKey="name" interval={0} angle={-45} textAnchor="end" height={80} />
+                      <YAxis domain={[0, 100]} />
                       <Tooltip />
                       <Legend />
-                      <Bar dataKey="positive" fill="#4CAF50" name="Positive %" />
-                      <Bar dataKey="negative" fill="#f44336" name="Negative %" />
+                      <Bar dataKey="positive" fill="#4CAF50" name="Positive" />
+                      <Bar dataKey="negative" fill="#f44336" name="Negative" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
